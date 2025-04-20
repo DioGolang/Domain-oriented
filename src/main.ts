@@ -3,6 +3,7 @@ import process from "process";
 import crypto from "crypto";
 import pgp from "pg-promise";
 import WebSocket, {Server} from "ws";
+import {AuctionRepositoryDatabase} from "./AuctionRepository";
 
 const app = express();
 app.use(express.json());
@@ -15,21 +16,13 @@ wss.on("connection", (ws) => {
 
 //const connection = pgp()(`postgres://postgres:${process.env.POSTGRES_PASSWORD}@localhost:5432/${process.env.POSTGRES_DB}`);
 const connection = pgp()(`postgres://postgres:123456@localhost:5432/app`);
+const auctionRepository = new AuctionRepositoryDatabase();
 
 
 app.post("/auctions", async (req: Request, res: Response) => {
     const auction = req.body;
     auction.auctionId = crypto.randomUUID();
-    await connection.query(
-        "insert into domain_oriented.auction (auction_id, start_date, end_date, min_increment, start_amount)" +
-        "values ($1, $2, $3, $4, $5)",
-        [
-            auction.auctionId,
-            auction.startDate,
-            auction.endDate,
-            auction.minIncrement,
-            auction.startAmount
-        ]);
+    await auctionRepository.save(auction);
     res.json({
         auctionId: auction.auctionId,
     });
@@ -87,9 +80,8 @@ app.post("/bids", async (req: Request, res: Response) => {
 });
 
 app.get("/auctions/:auctionId", async (req: Request, res: Response) => {
-    const auctionId = req.params.auctionId; // Correctly access auctionId from req.params
-    const [auction] = await connection.query("select * from domain_oriented.auction where auction_id = $1",
-        [auctionId]);
+    const auctionId = req.params.auctionId;
+    const [auction] = await auctionRepository.get(auctionId);
 
     if (!auction) throw new Error("auction not found");
 

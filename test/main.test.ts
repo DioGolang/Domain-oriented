@@ -158,4 +158,3 @@ test("não pode dar lance seguido pelo menos cliente", async () => {
 afterEach(async () => {
     ws.close();
 })
-//1:08 https://www.youtube.com/watch?v=cCc37q3CXuc
